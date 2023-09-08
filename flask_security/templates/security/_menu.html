@@ -12,6 +12,11 @@
           <a href="{{ url_for_security('change_password') }}">{{ _fsdomain("Change Password") }}
         </li>
       {% endif %}
+      {%- if security.user_profile -%}
+        <li>
+          <a href="{{ url_for_security('user_profile') }}">{{ _fsdomain("User Profile") }}
+        </li>
+      {%- endif -%}
       {% if security.two_factor %}
         <li>
           <a href="{{ url_for_security('two_factor_setup') }}">{{ _fsdomain("Two Factor Setup") }}

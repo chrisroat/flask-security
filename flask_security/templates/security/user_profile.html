@@ -1,0 +1,20 @@
+{% extends "security/base.html" %}
+{% from "security/_macros.html" import render_field_with_errors, render_field, render_form_errors %}
+
+{% block content %}
+  {% include "security/_messages.html" %}
+  <h1>{{ _fsdomain('Register') }}</h1>
+  Email: {{ current_user.email }}<br/>
+  {% if security.username_enable %}Username: {{ current_user.username }}<br/>{% endif %}
+
+  {% if user_profile_form %}
+  <form action="{{ url_for_security('user_profile_update') }}" method="post" name="user_profile_form">
+    {{ user_profile_form.hidden_tag() }}
+    {{ render_form_errors(user_profile_form) }}
+    {{ render_field(user_profile_form.submit) }}
+  </form>
+  {% else %}
+  <a href="{{ url_for_security('user_profile_update') }}">Update</a>
+  {% endif %}
+  {% include "security/_menu.html" %}
+{% endblock content %}

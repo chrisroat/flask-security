@@ -61,6 +61,7 @@ _default_field_labels = {
     "login": _("Login"),
     "signin": _("Sign In"),
     "register": _("Register"),
+    "user_profile": _("Update User Profile"),
     "send_confirmation": _("Resend Confirmation Instructions"),
     "recover_password": _("Recover Password"),
     "reset_password": _("Reset Password"),
@@ -682,6 +683,10 @@ class RegisterForm(ConfirmRegisterForm, NextFormMixin):
         if not self.next.data:
             self.next.data = request.args.get("next", "")
 
+
+class UserProfileForm(Form):
+    submit = SubmitField(get_form_field_label("user_profile"))
+    
 
 class ResetPasswordForm(Form, NewPasswordFormMixin, PasswordConfirmFormMixin):
     """The default reset password form"""

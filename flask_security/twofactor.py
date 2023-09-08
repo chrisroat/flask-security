@@ -176,7 +176,8 @@ class CodeTfPlugin(TfPluginBase):
             session["tf_state"] = "setup_from_login"
             json_payload["tf_state"] = "setup_from_login"
             if not _security._want_json(request):
-                return redirect(url_for_security("two_factor_setup"))
+                values = dict(next=next_loc) if next_loc else dict()
+                return redirect(url_for_security("two_factor_setup", **values))
 
         # if user's two-factor properties are configured
         else:

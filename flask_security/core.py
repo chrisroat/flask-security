@@ -48,6 +48,7 @@ from .forms import (
     TwoFactorVerifyCodeForm,
     TwoFactorSetupForm,
     TwoFactorRescueForm,
+    UserProfileForm,
     VerifyForm,
     get_register_username_field,
     login_username_field,
@@ -169,6 +170,7 @@ _default_config: t.Dict[str, t.Any] = {
     "LOGIN_URL": "/login",
     "LOGOUT_URL": "/logout",
     "REGISTER_URL": "/register",
+    "USER_PROFILE_URL": "/user_profile",
     "RESET_URL": "/reset",
     "CHANGE_URL": "/change",
     "CONFIRM_URL": "/confirm",
@@ -201,6 +203,7 @@ _default_config: t.Dict[str, t.Any] = {
     "FORGOT_PASSWORD_TEMPLATE": "security/forgot_password.html",
     "LOGIN_USER_TEMPLATE": "security/login_user.html",
     "REGISTER_USER_TEMPLATE": "security/register_user.html",
+    "USER_PROFILE_TEMPLATE": "security/user_profile.html",
     "RESET_PASSWORD_TEMPLATE": "security/reset_password.html",
     "CHANGE_PASSWORD_TEMPLATE": "security/change_password.html",
     "SEND_CONFIRMATION_TEMPLATE": "security/send_confirmation.html",
@@ -211,6 +214,7 @@ _default_config: t.Dict[str, t.Any] = {
     "TWO_FACTOR_SELECT_TEMPLATE": "security/two_factor_select.html",
     "CONFIRMABLE": False,
     "REGISTERABLE": False,
+    "USER_PROFILE": False,  # TODO: must have registerable?
     "RECOVERABLE": False,
     "TRACKABLE": False,
     "PASSWORDLESS": False,
@@ -1027,6 +1031,7 @@ class Security:
             *SECURITY_CONFIRMABLE* is false
     :param confirm_register_form: set form for the register view when
             *SECURITY_CONFIRMABLE* is true
+    :param user_profile_form: set form for the user_profile view            
     :param forgot_password_form: set form for the forgot password view
     :param reset_password_form: set form for the reset password view
     :param change_password_form: set form for the change password view
@@ -1124,6 +1129,7 @@ class Security:
         verify_form: t.Type[VerifyForm] = VerifyForm,
         confirm_register_form: t.Type[ConfirmRegisterForm] = ConfirmRegisterForm,
         register_form: t.Type[RegisterForm] = RegisterForm,
+        user_profile_form: t.Type[UserProfileForm] = UserProfileForm,
         forgot_password_form: t.Type[ForgotPasswordForm] = ForgotPasswordForm,
         reset_password_form: t.Type[ResetPasswordForm] = ResetPasswordForm,
         change_password_form: t.Type[ChangePasswordForm] = ChangePasswordForm,
@@ -1195,6 +1201,7 @@ class Security:
             "verify_form": FormInfo(cls=verify_form),
             "confirm_register_form": FormInfo(cls=confirm_register_form),
             "register_form": FormInfo(cls=register_form),
+            "user_profile_form": FormInfo(cls=user_profile_form),
             "forgot_password_form": FormInfo(cls=forgot_password_form),
             "reset_password_form": FormInfo(cls=reset_password_form),
             "change_password_form": FormInfo(cls=change_password_form),
@@ -1269,6 +1276,7 @@ class Security:
         self.trackable: bool = False
         self.confirmable: bool = False
         self.registerable: bool = False
+        self.user_profile: bool = False
         self.changeable: bool = False
         self.recoverable: bool = False
         self.two_factor: bool = False
@@ -1348,6 +1356,7 @@ class Security:
             "verify_form",
             "confirm_register_form",
             "register_form",
+            "user_profile_form",
             "forgot_password_form",
             "reset_password_form",
             "change_password_form",
@@ -1906,6 +1915,12 @@ class Security:
         self, fn: t.Callable[[], t.Dict[str, t.Any]]
     ) -> None:
         self._add_ctx_processor("register", fn)
+
+    # TODO: What would this be for?
+    def user_profile_context_processor(
+        self, fn: t.Callable[[], t.Dict[str, t.Any]]
+    ) -> None:
+        self._add_ctx_processor("user_profile", fn)
 
     def reset_password_context_processor(
         self, fn: t.Callable[[], t.Dict[str, t.Any]]

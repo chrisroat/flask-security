@@ -25,6 +25,7 @@ from flask import abort, after_this_request, redirect, request
 
 from .decorators import unauth_csrf
 from .proxies import _security
+from .registerable_util import register_user_from_dict   
 from .utils import (
     config_value as cv,
     do_flash,
@@ -112,29 +113,37 @@ def oauthresponse(name: str) -> "ResponseValue":
 
     field_name, value = _security.oauthglue._oauth_response(name, token)
     user = _security.datastore.find_user(**{field_name: value})
-    if user:
-        after_this_request(view_commit)
-        response = _security.two_factor_plugins.tf_enter(
-            user, False, "oauth", next_loc=propagate_next(request.url)
-        )
-        if response:
-            return response
-        # two factor not required - login user
-        login_user(user)
-        if _security.redirect_behavior == "spa":
-            return redirect(
-                get_url(cv("POST_LOGIN_VIEW"), qparams=user.get_redirect_qparams())
-            )
-        return redirect(get_post_login_redirect())
-    # Seems ok to show identity - the only identity it could be is the callers
-    # so seems no way this can be used to enumerate registered users.
-    m, c = get_message("IDENTITY_NOT_REGISTERED", id=value)
+    if not user:
+        oauth_can_create_user = True
+        if not oauth_can_create_user:
+            # Seems ok to show identity - the only identity it could be is the callers
+            # so seems no way this can be used to enumerate registered users.
+            m, c = get_message("IDENTITY_NOT_REGISTERED", id=value)
+            if _security.redirect_behavior == "spa":
+                return redirect(get_url(cv("LOGIN_ERROR_VIEW"), qparams={c: m}))
+            do_flash(m, c)
+            # TODO: should redirect to where we came from?
+            return redirect(url_for_security("login"))
+        else:
+            user = register_user_from_dict({field_name: value, "password": None}) 
+            next_loc = url_for_security("user_profile_update")
+    else:
+        next_loc = propagate_next(request.url)
+   
+    after_this_request(view_commit)
+    response = _security.two_factor_plugins.tf_enter(
+        user, False, "oauth", next_loc=next_loc
+    )
+    if response:
+        return response
+    # two factor not required - login user
+    login_user(user)
     if _security.redirect_behavior == "spa":
-        return redirect(get_url(cv("LOGIN_ERROR_VIEW"), qparams={c: m}))
-    do_flash(m, c)
-    # TODO: should redirect to where we came from?
-    return redirect(url_for_security("login"))
-
+        return redirect(
+            get_url(cv("POST_LOGIN_VIEW"), qparams=user.get_redirect_qparams())
+        )
+    return redirect(get_post_login_redirect())
+    
 
 class OAuthGlue:
     """

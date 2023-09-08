@@ -338,6 +338,36 @@ def register() -> "ResponseValue":
     )
 
 
+@auth_required(lambda: cv("API_ENABLED_METHODS"))
+def user_profile() -> "ResponseValue":
+    """View function to display user profile."""
+    return _security.render_template(
+        cv("USER_PROFILE_TEMPLATE"),
+        **_ctx("user_profile"),
+    )
+
+@auth_required(lambda: cv("API_ENABLED_METHODS"))
+def user_profile_update() -> "ResponseValue":
+    """View function which handles updating user profile update."""
+    form = build_form_from_request("user_profile_form")
+
+    if request.method == "GET":
+        form.process(obj=current_user)
+    elif form.validate_on_submit():
+        after_this_request(view_commit)
+        user = current_user          
+        form.populate_obj(user)
+        _datastore.put(user)
+        do_flash("Updated user profile", "success")
+        return redirect(url_for_security('user_profile'))
+
+    return _security.render_template(
+        cv("USER_PROFILE_TEMPLATE"),
+        user_profile_form=form,
+        **_ctx("user_profile"),
+    )
+
+
 @unauth_csrf(fall_through=True)
 def send_login():
     """View function that sends login instructions for passwordless login"""
@@ -760,6 +790,7 @@ def two_factor_setup():
     authenticated.
     """
     form = t.cast(TwoFactorSetupForm, build_form_from_request("two_factor_setup_form"))
+    next = request.args.get("next")
 
     if not current_user.is_authenticated:
         # This is the initial login case
@@ -868,6 +899,7 @@ def two_factor_setup():
                 two_factor_verify_code_form=code_form,
                 choices=cv("TWO_FACTOR_ENABLED_METHODS"),
                 chosen_method=pm,
+                next=next,
                 **qrcode_values,
                 **_ctx("tf_setup"),
             )
@@ -899,6 +931,7 @@ def two_factor_setup():
         chosen_method=form.setup.data,
         primary_method=getattr(user, "tf_primary_method", "None"),
         two_factor_required=cv("TWO_FACTOR_REQUIRED"),
+        next=next,
         **_ctx("tf_setup"),
     )
 
@@ -1187,6 +1220,15 @@ def create_blueprint(app, state, import_name):
         bp.route(
             cv("REGISTER_URL", app=app), methods=["GET", "POST"], endpoint="register"
         )(register)
+
+    if state.user_profile:
+        user_profile_url = cv("USER_PROFILE_URL", app=app)
+        bp.route(
+            user_profile_url, methods=["GET", "POST"], endpoint="user_profile"
+        )(user_profile)
+        bp.route(
+            f"{ user_profile_url }/update", methods=["GET", "POST"], endpoint="user_profile_update"
+        )(user_profile_update)
 
     if state.recoverable:
         reset_url = cv("RESET_URL", app=app)
